@@ -79,3 +79,62 @@ def hand_and_till_M_statistic(test_tgt, test_probs, weighted=False):
     # no * 2 ... factored out above and they cancel
     M = avg_auc_sum / (n_classes * (n_classes-1))
     return M
+
+def regression_errors(figsize, predicted, actual, errors='all'):
+    ''' figsize -> subplots;
+        predicted/actual data -> columns in a DataFrame
+        errors -> "all" or sequence of indices '''
+    fig, axes = plt.subplots(1, 2, figsize=figsize,
+                             sharex=True, sharey=True)
+    df = pd.DataFrame({'actual':actual,
+                       'predicted':predicted})
+
+    for ax, (x,y) in zip(axes, it.permutations(['actual',
+                                                'predicted'])):
+        # plot the data as '.'; perfect as y=x line
+        ax.plot(df[x], df[y], '.', label='data')
+        ax.plot(df['actual'], df['actual'], '-',
+                label='perfection')
+        ax.legend()
+
+        ax.set_xlabel('{} Value'.format(x.capitalize()))
+        ax.set_ylabel('{} Value'.format(y.capitalize()))
+        ax.set_aspect('equal')
+
+    axes[1].yaxis.tick_right()
+    axes[1].yaxis.set_label_position("right")
+
+    # show connecting bars from data to perfect
+    # for all or only those specified?
+    if errors == 'all':
+        errors = range(len(df))
+    if errors:
+        acts  = df.actual.iloc[errors]
+        preds = df.predicted.iloc[errors]
+        axes[0].vlines(acts, preds, acts, 'r')
+        axes[1].hlines(acts, preds, acts, 'r')
+
+def regression_residuals(ax, predicted, actual,
+                         show_errors=None, right=False):
+    ''' figsize -> subplots;
+        predicted/actual data -> columns of a DataFrame
+        errors -> "all" or sequence of indices '''
+    df = pd.DataFrame({'actual':actual,
+                       'predicted':predicted})
+    df['error'] = df.actual - df.predicted
+    ax.plot(df.predicted, df.error, '.')
+    ax.plot(df.predicted, np.zeros_like(predicted), '-')
+
+    if right:
+        ax.yaxis.tick_right()
+        ax.yaxis.set_label_position("right")
+
+    ax.set_xlabel('Predicted')
+    ax.set_ylabel('Residual')
+
+    if show_errors == 'all':
+        show_errors = range(len(df))
+    if show_errors:
+        preds = df.predicted.iloc[show_errors]
+        errors = df.error.iloc[show_errors]
+        ax.vlines(preds, 0, errors, 'r')
